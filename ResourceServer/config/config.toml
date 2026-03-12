@@ -1,0 +1,7 @@
+[SelfServer]
+Name = "ResourceServer"
+Host = "0.0.0.0"
+Port = 9091
+[Path]
+ResourceRoot = "resoures"
+
