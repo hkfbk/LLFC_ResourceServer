@@ -15,10 +15,21 @@ if (POLICY CMP0141)
 endif()
 
 project ("ResourceServer")
-
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/LuaJit/include")
 find_package(Boost REQUIRED COMPONENTS asio)
 find_package(spdlog REQUIRED COMPONENTS)
 find_package(OpenSSL REQUIRED COMPONENTS)
 
+# 搜索 libluajit.a 或 luajit.lib
+find_library(LUAJIT_LIBRARY
+    NAMES lua51
+    PATHS "${CMAKE_SOURCE_DIR}/LuaJit/lib"
+    NO_DEFAULT_PATH   # 可选，只搜索给定路径
+)
 # 包含子项目。
 add_subdirectory ("ResourceServer")
+
+# 拷贝目录并保持目录结构
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/LuaJit/dll/lua51.dll
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/ResourceServer
+)

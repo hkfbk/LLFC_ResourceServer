@@ -16,8 +16,11 @@ void set_console_to_utf8 ()
 { }
 #endif // _Win32
 
+#include "luavm.hpp"
+
 static void run ()
 {
+	test_luajit ();
 	try {
 		std::clog << "ResourceServer run..." << std::endl;
 		auto&& server_name = cfg["SelfServer"]["Name"].value_or<std::string> ("failed");

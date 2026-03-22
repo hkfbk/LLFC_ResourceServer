@@ -25,5 +25,5 @@ target_link_libraries("ResourceServerTest" PRIVATE Boost::asio
 											   OpenSSL::Crypto
 # end						
 )
-
+target_link_libraries("ResourceServer" PRIVATE ${LUAJIT_LIBRARY})
 # TODO: 如有需要，请添加测试并安装目标。

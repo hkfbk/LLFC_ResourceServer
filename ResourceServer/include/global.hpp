@@ -56,12 +56,6 @@ enum class ResStaus :std::uint16_t
 	E_INVALID_ID = 1, // 请求失败, 无效消息id
 	E_INVALID_JSON = 3, // 请求失败， 无效json
 };
-inline void test ()
-{
-	std::uint16_t i = 0;
-	ResStaus r;
-	std::memcpy (&r, &i, sizeof (std::uint16_t));
-}
 
 template<typename E, std::size_t s>
 concept EnumWithSize = std::is_enum_v<E> && sizeof (std::underlying_type_t<E>) == s;
@@ -77,7 +71,7 @@ template<typename F>
 struct Defer
 {
 	Defer (F func)
-		:m_func (std::move (func))
+		:m_func (func)
 	{ }
 	~Defer ()
 	{

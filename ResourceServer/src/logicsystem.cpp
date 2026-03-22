@@ -3,9 +3,6 @@
 #include <nlohmann/json.hpp>
 #include "global.hpp"
 
-
-
-
 using namespace std::placeholders;
 namespace json = nlohmann;
 LogicSystem::LogicSystem ()
@@ -60,19 +57,16 @@ void LogicSystem::do_upload_file_req (SessionPtr_t session, ReqId id, const std:
 		Assert (path_pre.has_value (), "resource root is null");
 
 		fs::path p (path_pre.value ());
-		fs::path resource_path;
 		spdlog::info (p.string ());
 		spdlog::info (filename);
 		spdlog::info (path_pre.value ());
-		resource_path = p / "bin" / "static";
-		resource_path /= filename;
+		fs::path resource_path = p / "bin" / "static" / filename;
 		if (!fs::exists (resource_path.parent_path ()))
 		{
 			spdlog::info (std::format ("not found path:{}, creat path now.", resource_path.parent_path ().string ()));
 			fs::create_directories (resource_path.parent_path ());
 		}
 		//auto file_cur_size = fs::file_size (resource_path);
-		//std::ofstream out;
 		std::ofstream& out = session->get_file_stream ();
 		spdlog::info (std::format ("file stream open:{}", out.is_open ()));
 		if (!out.is_open ())
@@ -85,11 +79,14 @@ void LogicSystem::do_upload_file_req (SessionPtr_t session, ReqId id, const std:
 		spdlog::info (std::format ("wirte file:{} lenght:{}", resource_path.filename ().string (), buffer.size ()));
 		out << buffer;
 		if (last) // 最后一个包，关闭文件流
+		{
 			spdlog::info ("file stream close");
-		out.close ();
+			out.close ();
+		}
 		respond["sucess"] = enum_to_int (ResStaus::E_SUCESS);
 		respond["name"] = filename;
-		respond["size"] = buffer.size ();
+		respond["total_size"] = total_size;
+		respond["trans_size"] = trans_size;
 		respond["message"] = std::format ("success");
 	}
 	catch (std::filesystem::filesystem_error e)
