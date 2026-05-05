@@ -1,0 +1,9 @@
+/log/
+/.vs/
+/out/
+*.log
+*.o
+*.obj
+*.out
+build/
+/.vscode/
