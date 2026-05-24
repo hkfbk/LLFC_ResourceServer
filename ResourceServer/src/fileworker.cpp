@@ -56,7 +56,6 @@ FileWorker::~FileWorker()
 {
 	m_task_thr.join();
 }
-
 void FileWorker::task_callback(TaskPtr_t task)
 {
 	try {

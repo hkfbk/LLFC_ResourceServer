@@ -10,13 +10,13 @@ class CSession;
 struct FileTask // 文件任务的信息
 {
 	std::shared_ptr<CSession> session;
-	int sep;
-	int total_size;
-	int trans_size;
-	int last;
+	std::size_t sep;
+	std::size_t total_size;
+	std::size_t trans_size;
 	std::string name;
 	std::string file_data;
 	std::size_t offset; // 文件指针开始写入的位置
+	bool last;
 };
 
 class FileWorker

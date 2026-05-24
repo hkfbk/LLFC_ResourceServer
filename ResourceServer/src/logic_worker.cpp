@@ -61,7 +61,7 @@ void LogicWork::register_callback()
 			std::size_t index = std::hash<std::string>()(filename) % FileSystem::s_logic_worker_count; 
 			// 向工作者投递任务
 			FileSystem::get_instance().post_task_to_worker(std::make_shared<FileSystem::FileTask>(
-				session, seq, total_size, trans_size, last, filename, data, offset
+				session, seq, total_size, trans_size, filename, data, offset, last
 			), index);
 		}
 		catch (std::exception e) {

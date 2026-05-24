@@ -6,7 +6,7 @@ FileSystem::FileSystem()
 {
 	m_workers.reserve(s_logic_worker_count);
 	for (std::size_t idx = 0; idx < s_logic_worker_count;idx++)
-		m_workers.push_back({});
+		m_workers[idx] = FileWorker();
 }
 
 FileSystem::~FileSystem()
