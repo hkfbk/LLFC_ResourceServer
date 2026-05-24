@@ -1,7 +1,4 @@
 #pragma once
-//#include <thread>
-#include <condition_variable>
-#include <memory>
 #include <macro.hpp>
 
 #ifdef _DEBUG
@@ -12,6 +9,12 @@
 #define _SLNGLETON_DELETE_COPY_MOVE_(classname) __NOCOPY_MOVE__(classname)
 #endif // !__SLNGLETON_DELETE_COPY_MOVE__
 
+#ifndef DEFINE_SINGLETON
+#define DEFINE_SINGLETON(classname) _SLNGLETON_DELETE_COPY_MOVE_(classname);\
+friend class Singleton<classname>;
+#endif // DEFINE_SINGLETON
+
+
 
 template<typename T>
 class Singleton
@@ -20,7 +23,7 @@ protected:
 	Singleton ()
 	{
 #ifdef _DEBUG
-		std::clog << "this is thread " << std::this_thread::get_id () << " " << typeid(T).name () << " singleton structer\n";
+		std::clog << typeid(T).name () << " singleton structer\n";
 #endif // _DEBUG
 	}
 	_SLNGLETON_DELETE_COPY_MOVE_ (Singleton);
@@ -31,7 +34,7 @@ public:
 		return sp_instance;
 	}
 
-	std::size_t get_address () const
+	[[nodiscard]] std::size_t get_address () const
 	{
 		return reinterpret_cast<std::size_t>(std::addressof (get_instance ()));
 	}
@@ -39,7 +42,7 @@ public:
 	~Singleton ()
 	{
 #ifdef _DEBUG
-		std::clog << "this is thread " << std::this_thread::get_id () << " " << typeid(T).name () << " singleton destruct\n";
+		std::clog << typeid(T).name () << " singleton destruct\n";
 #endif // _DEBUG
 	}
 

@@ -9,14 +9,20 @@ LogicSystem::LogicSystem ()
 	: m_is_stop (false)
 {
 	register_callback ();
-	m_word_thr = std::thread (&LogicSystem::deal_message, this);
+	//m_word_thr = std::thread (&LogicSystem::deal_message, this);
+	for (auto&& thr : m_word_thrs)
+		thr = std::jthread(&LogicSystem::deal_message_mt, this);
 }
 LogicSystem::~LogicSystem ()
 {
 	m_is_stop = true;
 	m_cond.notify_all ();
 	spdlog::info ("wait locic_system_work_thr quit");
-	m_word_thr.join ();
+	for (auto&& thr : m_word_thrs)
+	{
+		thr.request_stop();
+		thr.join();
+	}
 	spdlog::info (std::format ("LogicSystem destructer"));
 }
 void LogicSystem::register_callback ()
@@ -91,15 +97,11 @@ void LogicSystem::do_upload_file_req (SessionPtr_t session, ReqId id, const std:
 	}
 	catch (std::filesystem::filesystem_error e)
 	{
-		Assert (false, std::format ("what:{}, error code:{}", e.what (), e.code ().message ()));
-	}
-	catch (std::runtime_error e)
-	{
-		Assert (false, e.what ());
+		Assert (false, std::format ("filesystem error, what:{}, error code:{}", e.what (), e.code ().message ()));
 	}
 	catch (json::detail::parse_error e)
 	{
-		Assert (false, e.what ());
+		Assert (false, std::format("json parse error, id:{}, msg:{}", e.id, e.what()));
 	}
 	catch (std::exception e)
 	{
@@ -107,13 +109,19 @@ void LogicSystem::do_upload_file_req (SessionPtr_t session, ReqId id, const std:
 	}
 }
 
-void LogicSystem::post_message_to_logic_system (LogicNodePtr_t node_)
+void LogicSystem::post_message_to_logic_system (LogicNodePtr_t node_, std::size_t hash_code_)
 {
 	{
 		std::unique_lock l (m_mutex);
-		bool was_empty = m_logic_que.empty ();
-		m_logic_que.push (node_);
-		if (was_empty) m_cond.notify_one ();
+		//bool was_empty = m_logic_que.empty ();
+		//m_logic_que.push (node_);
+		//if (was_empty) m_cond.notify_one ();
+		bool que_empty = true;
+		if (m_logic_map.contains(hash_code_)) que_empty = m_logic_map[hash_code_].empty();
+		else m_logic_map[hash_code_] = std::queue<LogicNodePtr_t>();
+		m_logic_map[hash_code_].push(node_);
+		if (que_empty) m_cond.notify_one();
+
 	}
 
 	//// 确保队列为空后离开
@@ -154,3 +162,17 @@ void LogicSystem::deal_message ()
 			break;
 	}
 }
+
+void LogicSystem::deal_message_mt(std::stop_token stop_) {
+	while (true)
+	{
+		std::unique_lock lock(m_mutex);
+		m_cond.wait(lock, [this, &stop_] {
+			return m_is_stop || stop_.stop_requested() || !m_logic_map.empty();
+			});
+
+		
+	}
+}
+
+

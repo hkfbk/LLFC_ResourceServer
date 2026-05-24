@@ -41,6 +41,8 @@ constexpr std::uint32_t MSG_TOTAL_LEN = BUFFER_TOTAL_LEN;
 // 文件单次发送的最大长度
 constexpr std::int16_t MAX_FILE_LEN = 2 * B;
 
+
+
 // 接受的消息id
 enum class ReqId :std::uint16_t
 {
@@ -81,14 +83,22 @@ struct Defer
 	F m_func;
 };
 
+ALWAYS_INLINE void Assert(std::string_view msg = "", std::source_location loca = std::source_location::current())
+{
+		spdlog::error(std::format("assert:{}, file:{},line:{}", msg, loca.file_name(), loca.line()));
+#ifdef _DEBUG
+		std::terminate();
+#endif
+}
 
-ALWAYS_INLINE constexpr void Assert (bool e, std::string_view msg = "", std::source_location loca = std::source_location::current ())
+
+ALWAYS_INLINE void Assert (bool e, std::string_view msg = "", std::source_location loca = std::source_location::current ())
 {
 	if (!e)
 	{
 		spdlog::error (std::format ("assert:{}, file:{},line:{}", msg, loca.file_name (), loca.line ()));
 #ifdef _DEBUG
-		std::abort ();
+		std::terminate();
 #endif
 	}
 }

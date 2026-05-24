@@ -4,6 +4,7 @@
 #include "ResourceServer.h"
 
 
+
 #ifdef _WIN32
 #include <Windows.h>
 void set_console_to_utf8 ()
@@ -15,6 +16,23 @@ void set_console_to_utf8 ()
 void set_console_to_utf8 ()
 { }
 #endif // _Win32
+
+static void set_log_fmt()
+{
+	auto server_name_p = cfg["SelfServer"]["Name"].as_string();
+	std::string server_name = "Unname_server";
+	if (server_name_p) server_name = (*server_name_p).get();
+	auto file_sink_mt = std::make_shared<spdlog::sinks::daily_file_sink_mt>(std::format("logs/{}_log.log", server_name), 0, 0);
+	file_sink_mt->set_pattern("[%Y-%m-%d %H:%M:%S] | [%l] | %v");
+	// 控制台 Sink（带颜色，多线程安全）
+	auto console_sink_mt = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+	console_sink_mt->set_pattern("[%Y-%m-%d %H:%M:%S] | [%l] | %v");
+	std::vector<spdlog::sink_ptr> sinks{ file_sink_mt, console_sink_mt };
+	spdlog::set_default_logger(std::make_shared<spdlog::logger>("multi_sink_logger", sinks.begin(), sinks.end()));
+	console_sink_mt->set_level(spdlog::level::warn);
+	file_sink_mt->set_level(spdlog::level::trace);
+	spdlog::flush_on(spdlog::level::info);
+}
 
 static void run ()
 {
@@ -43,6 +61,7 @@ int main ()
 {
 	set_console_to_utf8 ();
 	std::cout << BOOST_ASIO_VERSION << std::endl;
+	set_log_fmt();
 	run ();
 	
 	(void) getchar ();

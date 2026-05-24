@@ -131,7 +131,8 @@ void CSession::start ()
 				// 先打印出来
 				//spdlog::info (self->m_recv_node->current_len);
 				//spdlog::info (self->m_recv_node->body);
-				LogicSystem::get_instance ().post_message_to_logic_system (std::make_shared<LogicNode> (self, self->m_recv_node));
+				auto hash_id = self->m_hash(self->get_session_id()) % LogicSystem::s_logic_pool_size;
+				LogicSystem::get_instance ().post_message_to_logic_system (std::make_shared<LogicNode> (self, self->m_recv_node), hash_id);
 				self->m_is_head = true;
 				if (bytes_transfered == 0) { // 所有消息均已处理完毕
 					self->start ();
@@ -201,7 +202,8 @@ void CSession::read_message_full (std::size_t read_total_len)
 			if (self->m_recv_node->is_fulled ()) // 收全了, 投递消息并开启新的消息监听
 			{
 				spdlog::info (std::format ("data len:{}, total len:{}", self->m_recv_node->current_len, self->m_recv_node->total_len));
-				LogicSystem::get_instance ().post_message_to_logic_system (std::make_shared<LogicNode> (self, self->m_recv_node));
+				
+				LogicSystem::get_instance ().post_message_to_logic_system (std::make_shared<LogicNode> (self, self->m_recv_node), self->m_hash(self->get_session_id()) % LogicSystem::s_logic_pool_size);
 
 				self->read_head ();
 				return;

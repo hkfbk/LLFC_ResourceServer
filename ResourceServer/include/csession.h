@@ -49,6 +49,7 @@ private:
 	// asio::strand队列
 	asio::strand<asio::io_context::executor_type> m_strand;
 	std::ofstream m_file_out;
+	std::hash<std::string> m_hash;
 	// 队列锁
 	std::mutex m_send_lock;
 	bool m_is_stop;
@@ -56,9 +57,3 @@ private:
 };
 
 
-struct LogicNode
-	// 定义逻辑节点，以供逻辑系统使用
-{
-	std::shared_ptr<CSession> m_session;
-	std::shared_ptr<RecvNode> m_recv_node;
-};
