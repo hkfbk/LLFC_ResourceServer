@@ -10,8 +10,8 @@ LogicSystem::LogicSystem ()
 {
 	register_callback ();
 	//m_word_thr = std::thread (&LogicSystem::deal_message, this);
-	for (auto&& thr : m_word_thrs)
-		thr = std::jthread(&LogicSystem::deal_message_mt, this);
+	//for (auto&& thr : m_word_thrs)
+	//	thr = std::jthread(&LogicSystem::deal_message_mt, this);
 }
 LogicSystem::~LogicSystem ()
 {

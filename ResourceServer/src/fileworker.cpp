@@ -16,10 +16,10 @@ FileWorker::FileWorker()
 					});
 				if (!m_task_que.empty())
 				{
-					auto task = m_task_que.front();
+					auto task = std::move(m_task_que.front());
 					m_task_que.pop();
 					l.unlock(); // 尝试在执行任务之前开锁, 如果出现线程竞争则取消开锁
-					task_callback(task);
+					task_callback(std::move(task));
 				}
 			} // !!!END try
 			catch (std::exception e) {
@@ -29,9 +29,9 @@ FileWorker::FileWorker()
 		try {
 			while (!m_task_que.empty()) // 在服务器停止工作后将数据剩余数据写入本地, 理论上此处不会发生竞争, 暂时不加锁
 			{
-				auto task = m_task_que.front();
+				auto task = std::move(m_task_que.front());
 				m_task_que.pop();
-				task_callback(task);
+				task_callback(std::move(task));
 			}
 		} // !!!END try
 		catch (std::exception e) {
@@ -44,7 +44,7 @@ void FileWorker::post_task(TaskPtr_t task, TaskType type)
 {
 	std::lock_guard l(m_mutex);
 	bool is_empty = m_task_que.empty();
-	m_task_que.push(task);
+	m_task_que.push(std::move(task));
 	if (is_empty) m_cond.notify_one();
 }
 void FileWorker::shutdown() noexcept

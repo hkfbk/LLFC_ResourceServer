@@ -10,6 +10,7 @@ LogicWork::LogicWork()
 	: m_work_que()
 	, m_cond()
 	, m_mutex()
+	, m_b_stop(false)
 {
 	m_work_thr = std::thread(&LogicWork::deal_work, this);
 }
@@ -60,7 +61,7 @@ void LogicWork::register_callback()
 			// 通过文件名hash值与filesystem的工作者数量取余计算放入的位置
 			std::size_t index = std::hash<std::string>()(filename) % FileSystem::s_logic_worker_count; 
 			// 向工作者投递任务
-			FileSystem::get_instance().post_task_to_worker(std::make_shared<FileSystem::FileTask>(
+			FileSystem::get_instance().post_task_to_worker(std::make_unique<FileSystem::FileTask>(
 				session, seq, total_size, trans_size, filename, data, offset, last
 			), index);
 		}

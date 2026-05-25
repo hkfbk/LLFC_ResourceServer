@@ -26,7 +26,7 @@ public:
 		E_UPLOAD, // 上传
 		E_DOWNLOAD, // 下载
 	};
-	using TaskPtr_t = std::shared_ptr<FileTask>;
+	using TaskPtr_t = std::unique_ptr<FileTask>;
 	using enum TaskType;
 	FileWorker();
 	~FileWorker();
