@@ -10,6 +10,7 @@ configure_file(${CMAKE_SOURCE_DIR}/ResourceServer/config/config.toml ${CMAKE_BIN
 
 project ("ResourceServer")
 find_package(Boost REQUIRED COMPONENTS asio)
+find_package(fmt REQUIRED COMPONENTS)
 find_package(spdlog REQUIRED COMPONENTS)
 find_package(OpenSSL REQUIRED COMPONENTS)
 find_package(tomlplusplus REQUIRED COMPONENTS)

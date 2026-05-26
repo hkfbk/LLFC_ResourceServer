@@ -51,7 +51,7 @@ void AsioIoServicePool::stop ()
 
 AsioIoServicePool::~AsioIoServicePool ()
 {
+	spdlog::info ("AsioIoServicePool destructor");
 	if (m_stop) return;
 	stop ();
-	spdlog::info (std::format ("AsioIoServicePool destructor"));
 }

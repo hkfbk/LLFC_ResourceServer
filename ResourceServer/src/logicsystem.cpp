@@ -10,8 +10,8 @@ LogicSystem::LogicSystem ()
 {
 	register_callback ();
 	//m_word_thr = std::thread (&LogicSystem::deal_message, this);
-	//for (auto&& thr : m_word_thrs)
-	//	thr = std::jthread(&LogicSystem::deal_message_mt, this);
+	for (auto&& thr : m_word_thrs)
+		thr = std::jthread (std::bind_front(&LogicSystem::deal_message_mt, this));
 }
 LogicSystem::~LogicSystem ()
 {
@@ -170,8 +170,25 @@ void LogicSystem::deal_message_mt(std::stop_token stop_) {
 		m_cond.wait(lock, [this, &stop_] {
 			return m_is_stop || stop_.stop_requested() || !m_logic_map.empty();
 			});
-
-		
+		if (!m_logic_que.empty ())
+		{
+			// 逐个处理逻辑信息
+			auto&& msg_node = m_logic_que.front ();
+			auto msg_id = msg_node->m_recv_node->get_msgID ();
+			// 检查id是否存在
+			if (!m_callback_handler.contains (msg_id))
+			{
+				m_logic_que.pop ();
+				//if (m_logic_que.empty ()) m_cond.notify_one ();
+				continue;
+			}
+			m_callback_handler[msg_id] (msg_node->m_session, msg_id, msg_node->m_recv_node->body);
+			m_logic_que.pop ();
+			//if (m_logic_que.empty ()) m_cond.notify_one ();
+		}
+		// 检查服务是否停止，如果停止则处理剩余信息后退出
+		if (m_logic_que.empty () and (m_is_stop || stop_.stop_requested()))
+			break;
 	}
 }
 

@@ -16,7 +16,7 @@ FileWorker::FileWorker()
 					});
 				if (!m_task_que.empty())
 				{
-					auto task = std::move(m_task_que.front());
+					TaskPtr_t task = std::move(m_task_que.front());
 					m_task_que.pop();
 					l.unlock(); // 尝试在执行任务之前开锁, 如果出现线程竞争则取消开锁
 					task_callback(std::move(task));
