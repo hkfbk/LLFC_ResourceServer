@@ -1,5 +1,5 @@
 #ifndef _DEBUG
-//#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 #endif // _DEBUG
 #include "ResourceServer.h"
 
@@ -29,9 +29,9 @@ static void set_log_fmt()
 	console_sink_mt->set_pattern("[%Y-%m-%d %H:%M:%S] | [%l] | %v");
 	std::vector<spdlog::sink_ptr> sinks{ file_sink_mt, console_sink_mt };
 	spdlog::set_default_logger(std::make_shared<spdlog::logger>("multi_sink_logger", sinks.begin(), sinks.end()));
-	console_sink_mt->set_level(spdlog::level::warn);
+	console_sink_mt->set_level(spdlog::level::trace);
 	file_sink_mt->set_level(spdlog::level::trace);
-	spdlog::flush_on(spdlog::level::info);
+	spdlog::flush_on(spdlog::level::trace);
 }
 
 static void run ()
@@ -56,13 +56,12 @@ static void run ()
 		std::cerr << "解析失败:" << e_.what () << std::endl;
 	}
 }
-
 int main ()
 {
 	set_console_to_utf8 ();
 	std::cout << BOOST_ASIO_VERSION << std::endl;
+	std::cout << DEBUGLOG_ << std::endl;
 	set_log_fmt();
 	run ();
-	
 	(void) getchar ();
 }

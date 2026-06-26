@@ -1,6 +1,6 @@
 #include "file_system.h"
 #include "fileworker.h"
-
+#include "global.hpp"
 
 FileSystem::FileSystem()
 {
@@ -17,7 +17,12 @@ FileSystem::~FileSystem()
 
 void FileSystem::post_task_to_worker(TaskPtr_t task, std::size_t index)
 {
-	m_workers.at(index)->post_task(std::move(task));
+	try {
+		m_workers.at (index)->post_task (std::move (task));
+	}
+	catch (std::out_of_range e) {
+		Assert (e.what ());
+	}
 }
 
 

@@ -30,7 +30,7 @@ private:
 	// 处理消息
 	void deal_message ();
 	// 多线程消息处理
-	void deal_message_mt(std::stop_token stop_);
+	void deal_message_mt(std::uint16_t idx, std::stop_token stop_);
 	// 注册回调
 	void register_callback ();
 	// 测试逻辑

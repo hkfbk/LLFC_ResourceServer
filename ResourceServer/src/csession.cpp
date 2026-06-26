@@ -8,6 +8,7 @@
 #include "boost/asio/read.hpp"
 #include "nlohmann/json.hpp"
 #include "logicsystem.h"
+#include "logic_worker.h"
 namespace json = nlohmann;
 using namespace std::placeholders;
 CSession::CSession (asio::io_context& ioc_, CServer* p_server)
@@ -48,6 +49,7 @@ bool CSession::is_stop () const noexcept
 
 void CSession::start ()
 {
+	DEBUGLOG("")
 	std::memset (m_data, 0, BUFFER_TOTAL_LEN);
 	auto self = shared_from_this ();
 	read_head ();
@@ -57,7 +59,7 @@ void CSession::start ()
 		[self] (boost::system::error_code ec, std::size_t bytes_transfered) {
 			if (ec) { // 处理异常
 				self->close ();
-				spdlog::error (std::format ("callback failed:{}", ec.message ()));
+				ERRORLOG (std::format ("callback failed:{}", ec.message ()));
 				self->mp_server->clear_session (self->get_session_id ());
 				return;
 			}
@@ -99,7 +101,7 @@ void CSession::start ()
 						return;
 					}
 					// 构造接收节点
-					self->m_recv_node = std::make_shared<RecvNode> (msg_len, static_cast<ReqId>(id));
+					self->m_recv_node = std::make_unique<RecvNode> (msg_len, static_cast<ReqId>(id));
 					self->m_head_node->clear (); // 信息已经用完了，先清除出去
 					if (bytes_transfered <= 0) { // 正好只有一个头部的长度, 继续接收信息
 						self->start ();
@@ -129,10 +131,10 @@ void CSession::start ()
 				self->m_recv_node->current_len += remaining_len;
 				// 消息收取完毕，处理消息
 				// 先打印出来
-				//spdlog::info (self->m_recv_node->current_len);
-				//spdlog::info (self->m_recv_node->body);
-				auto hash_id = self->m_hash(self->get_session_id()) % LogicSystem::s_logic_pool_size;
-				LogicSystem::get_instance ().post_message_to_logic_system (std::make_shared<LogicNode> (self, self->m_recv_node), hash_id);
+				DEBUGLOG (self->m_recv_node->current_len);
+				DEBUGLOG (self->m_recv_node->body);
+				auto hash_id = self->m_hash(self->get_session_id()) % LogicWork::s_work_logic_count;
+				LogicWork::get_instance ().post_work (std::make_unique<LogicNode> (self, std::move(self->m_recv_node)), hash_id);
 				self->m_is_head = true;
 				if (bytes_transfered == 0) { // 所有消息均已处理完毕
 					self->start ();
@@ -157,7 +159,7 @@ void CSession::read_head ()
 				self->mp_server->clear_session (self->get_session_id ());
 				return;
 			}
-			if (bytes_transfered == 0) return;
+			// if (bytes_transfered == 0) return;
 			// 处理头部信息
 			std::memcpy (self->m_head_node->body, self->m_data, HEAD_TOTAL_LEN);
 			self->m_head_node->current_len += HEAD_TOTAL_LEN;
@@ -168,12 +170,12 @@ void CSession::read_head ()
 			// 将长度从头部取出
 			std::int32_t body_len = 0;
 			std::memcpy (&body_len, self->m_head_node->body + HEAD_ID_LEN, HEAD_DATA_LEN);
-			spdlog::info (std::format ("body_len:{}", body_len));
+			DEBUGLOG (std::format ("network body_len:{}", body_len));
 			body_len = ops::network_to_host_long (body_len);
-			spdlog::info (std::format ("body_len:{}", body_len));
+			DEBUGLOG (std::format ("host body_len:{}", body_len));
 			// 构造消息节点
-			self->m_recv_node = std::make_shared<RecvNode> (body_len, static_cast<ReqId>(id));
-			spdlog::info (std::format ("head receive len:{}", bytes_transfered));
+			self->m_recv_node = std::make_unique<RecvNode> (body_len, static_cast<ReqId>(id));
+			DEBUGLOG (std::format ("head receive len:{}", bytes_transfered));
 			// 调用接收消息体的函数
 			self->read_message_full (body_len);
 
@@ -203,13 +205,18 @@ void CSession::read_message_full (std::size_t read_total_len)
 			{
 				spdlog::info (std::format ("data len:{}, total len:{}", self->m_recv_node->current_len, self->m_recv_node->total_len));
 				
-				LogicSystem::get_instance ().post_message_to_logic_system (std::make_shared<LogicNode> (self, self->m_recv_node), self->m_hash(self->get_session_id()) % LogicSystem::s_logic_pool_size);
+				// 消息收取完毕，处理消息
+				// 先打印出来
+				auto hash_id = self->m_hash (self->get_session_id ()) % LogicWork::s_work_logic_count;
+				LogicWork::get_instance ().post_work (std::make_unique<LogicNode> (self, std::move (self->m_recv_node)), hash_id);
+				//LogicSystem::get_instance ().post_message_to_logic_system (std::make_shared<LogicNode> (self, std::move(self->m_recv_node)), self->m_hash (self->get_session_id ()) % LogicSystem::s_logic_pool_size);
 
 				self->read_head ();
 				return;
 			}
 			else // 未收全, 计算剩余大小并监听
 			{
+				DEBUGLOG (std::format ("buffer not full, continue read"));
 				std::int64_t residual = static_cast<std::int64_t>(read_total_len - bytes_transfered);
 				Assert (residual > 0, "residual lenght is too small!!!");
 				self->read_message_full (residual);
@@ -231,7 +238,7 @@ void CSession::send (ReqId id, const std::string& data)
 	m_send_queue.push (std::make_shared<SendNode> (data.c_str (), data.length (), id));
 	if (que_size > 0) return; // 已经有线程在处理了，先退出
 	auto& msg_node = m_send_queue.front ();
-	spdlog::info (std::format ("Send message:{}, id:{}, lenght:{}, date len:{}", msg_node->body + HEAD_TOTAL_LEN, enum_to_int (msg_node->msg_id), msg_node->current_len, data.length ()));
+	INFOLOG (std::format ("Send message:{}, id:{}, lenght:{}, date len:{}", msg_node->body + HEAD_TOTAL_LEN, enum_to_int (msg_node->msg_id), msg_node->current_len, data.length ()));
 	asio::async_write (m_sock, asio::buffer (msg_node->body, msg_node->current_len),
 		std::bind (&CSession::write_handler, this, _1, shared_from_this ()));
 

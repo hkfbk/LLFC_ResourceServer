@@ -109,7 +109,7 @@ inline static [[nodiscard]] ALWAYS_INLINE std::string base64_decode (const std::
 	BIO* bio = BIO_new_mem_buf (encoded_str.data (), -1);
 	bio = BIO_push (b64, bio);
 	// 不换行
-	BIO_set_flags (bio, BIO_FLAGS_BASE64_NO_NL);
+	BIO_set_flags (bio, BIO_get_flags (bio) | BIO_FLAGS_BASE64_NO_NL);
 	// 解码
 	std::string decoded;
 	decoded.resize (encoded_str.size ());

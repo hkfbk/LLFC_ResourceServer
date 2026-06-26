@@ -1,5 +1,5 @@
 #pragma once
-#include <string>
+#include <string_view>
 #ifndef _NOCOPY_
 #define _NOCOPY_(T) T(const T&) = delete;\
 T& operator=(const T&) = delete
@@ -20,16 +20,17 @@ T& operator=(const T&&) = delete
 #define ALWAYS_INLINE inline
 #endif
 
-ALWAYS_INLINE constexpr std::string ___debug_file_name(const std::string& str)
+ALWAYS_INLINE constexpr std::string_view ___debug_file_name(std::string_view str)
 {
 	auto index = str.find_last_of('\\');
-	if (index != std::string::npos)
-		return str.substr(index + 1, str.size());
+	if (index != std::string_view::npos)
+		return str.substr(index + 1);
 	return str;
 }
 
-#if defined(_DEBUG)
+#ifdef _DEBUG
 #ifndef DEBUGLOG
+#define DEBUGLOG_ 1
 #define DEBUGLOG(log) spdlog::debug("[{} {} {}] | {}", ___debug_file_name(__FILE__), __FUNCTION__, __LINE__, (log));
 #endif // !DEBUGLOG
 #ifndef LOG

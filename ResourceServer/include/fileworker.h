@@ -5,15 +5,16 @@
 #include <condition_variable>
 #include <functional>
 #include <queue>
-
+#include <filesystem>
 class CSession;
 struct FileTask // 文件任务的信息
 {
 	std::shared_ptr<CSession> session;
-	std::size_t sep;
+	std::size_t seq;
 	std::size_t total_size;
 	std::size_t trans_size;
 	std::string name;
+	std::filesystem::path   path;
 	std::string file_data;
 	std::size_t offset; // 文件指针开始写入的位置
 	bool last;

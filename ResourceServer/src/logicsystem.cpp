@@ -2,6 +2,7 @@
 #include "boost/asio/write.hpp"
 #include <nlohmann/json.hpp>
 #include "global.hpp"
+#include "macro.hpp"
 
 using namespace std::placeholders;
 namespace json = nlohmann;
@@ -10,8 +11,8 @@ LogicSystem::LogicSystem ()
 {
 	register_callback ();
 	//m_word_thr = std::thread (&LogicSystem::deal_message, this);
-	for (auto&& thr : m_word_thrs)
-		thr = std::jthread (std::bind_front(&LogicSystem::deal_message_mt, this));
+	for (int i = 0; i < s_logic_pool_size; i++ )
+		m_word_thrs[i] = std::jthread (std::bind_front (&LogicSystem::deal_message_mt, this, i));
 }
 LogicSystem::~LogicSystem ()
 {
@@ -81,6 +82,7 @@ void LogicSystem::do_upload_file_req (SessionPtr_t session, ReqId id, const std:
 			else out.open (resource_path, std::ios::binary | std::ios::app); // 后续补充文件
 		}
 		Assert (out.is_open (), std::format ("resource file open failed, filename:{}", resource_path.string ()));
+		DEBUGLOG (std::format ("file_data64:{}", base64_buffer));
 		std::string buffer = base64_decode (base64_buffer);
 		spdlog::info (std::format ("wirte file:{} lenght:{}", resource_path.filename ().string (), buffer.size ()));
 		out << buffer;
@@ -93,19 +95,19 @@ void LogicSystem::do_upload_file_req (SessionPtr_t session, ReqId id, const std:
 		respond["name"] = filename;
 		respond["total_size"] = total_size;
 		respond["trans_size"] = trans_size;
-		respond["message"] = std::format ("success");
+		respond["message"] = "success";
 	}
 	catch (std::filesystem::filesystem_error e)
 	{
-		Assert (false, std::format ("filesystem error, what:{}, error code:{}", e.what (), e.code ().message ()));
+		Assert (std::format ("filesystem error, what:{}, error code:{}", e.what (), e.code ().message ()));
 	}
 	catch (json::detail::parse_error e)
 	{
-		Assert (false, std::format("json parse error, id:{}, msg:{}", e.id, e.what()));
+		Assert (std::format("json parse error, id:{}, msg:{}", e.id, e.what()));
 	}
 	catch (std::exception e)
 	{
-		Assert (false, e.what ());
+		Assert (e.what ());
 	}
 }
 
@@ -113,6 +115,7 @@ void LogicSystem::post_message_to_logic_system (LogicNodePtr_t node_, std::size_
 {
 	{
 		std::unique_lock l (m_mutex);
+		spdlog::info ("post message");
 		//bool was_empty = m_logic_que.empty ();
 		//m_logic_que.push (node_);
 		//if (was_empty) m_cond.notify_one ();
@@ -163,31 +166,34 @@ void LogicSystem::deal_message ()
 	}
 }
 
-void LogicSystem::deal_message_mt(std::stop_token stop_) {
+void LogicSystem::deal_message_mt(std::uint16_t idx, std::stop_token stop_) {
+	auto& logic_que = m_logic_map[idx];
 	while (true)
 	{
 		std::unique_lock lock(m_mutex);
 		m_cond.wait(lock, [this, &stop_] {
 			return m_is_stop || stop_.stop_requested() || !m_logic_map.empty();
 			});
-		if (!m_logic_que.empty ())
+		if (!logic_que.empty ())
 		{
 			// 逐个处理逻辑信息
-			auto&& msg_node = m_logic_que.front ();
+			auto&& msg_node = logic_que.front ();
 			auto msg_id = msg_node->m_recv_node->get_msgID ();
 			// 检查id是否存在
 			if (!m_callback_handler.contains (msg_id))
 			{
-				m_logic_que.pop ();
+				logic_que.pop ();
 				//if (m_logic_que.empty ()) m_cond.notify_one ();
 				continue;
 			}
+			//DEBUGLOG (enum_to_int (msg_id));
+			spdlog::debug (enum_to_int (msg_id));
 			m_callback_handler[msg_id] (msg_node->m_session, msg_id, msg_node->m_recv_node->body);
-			m_logic_que.pop ();
+			logic_que.pop ();
 			//if (m_logic_que.empty ()) m_cond.notify_one ();
 		}
 		// 检查服务是否停止，如果停止则处理剩余信息后退出
-		if (m_logic_que.empty () and (m_is_stop || stop_.stop_requested()))
+		if (logic_que.empty () and (m_is_stop || stop_.stop_requested()))
 			break;
 	}
 }

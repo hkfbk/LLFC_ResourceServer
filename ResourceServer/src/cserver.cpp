@@ -30,6 +30,7 @@ void CServer::start ()
 			self->start ();
 			return;
 		}
+		DEBUGLOG("CServer::start")
 		session->start ();
 		// 连接成功，保存session
 		self->m_sessions[session->get_session_id ()] = session;

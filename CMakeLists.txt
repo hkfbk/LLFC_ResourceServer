@@ -4,7 +4,9 @@
 cmake_minimum_required (VERSION 3.8)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+if(MSVC)
+    add_compile_options(/Zc:preprocessor)
+endif()
 # 复制 ini 文件到构建目录
 configure_file(${CMAKE_SOURCE_DIR}/ResourceServer/config/config.toml ${CMAKE_BINARY_DIR}/ResourceServer/config/config.toml COPYONLY)
 

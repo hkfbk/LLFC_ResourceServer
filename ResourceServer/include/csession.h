@@ -17,10 +17,10 @@ class CServer;
 class CSession :public std::enable_shared_from_this<CSession>
 {
 	using uid_t = std::uint16_t;
-	using msg_queue = std::queue<std::shared_ptr<SendNode>>;
-	using head_msg_t = std::shared_ptr<MsgNode>;
-	using recv_msg_t = std::shared_ptr<RecvNode>;
 	using send_msg_t = std::shared_ptr<SendNode>;
+	using msg_queue = std::queue<send_msg_t>;
+	using head_msg_t = std::shared_ptr<MsgNode>;
+	using recv_msg_t = std::unique_ptr<RecvNode>;
 public:
 	CSession (asio::io_context& ioc_, CServer* p_server);
 	~CSession ();
